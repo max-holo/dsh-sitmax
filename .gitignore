@@ -1,0 +1,8 @@
+node_modules/
+dist/
+*.log
+.dsh-*
+
+# 本地预览产物（开发调试用）
+hud-preview.html
+hud-preview.png

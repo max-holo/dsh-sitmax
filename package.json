@@ -1,0 +1,53 @@
+{
+  "name": "dsh-sitmax",
+  "version": "1.0.4",
+  "description": "DSH plugin bundle: an anti-sedentary track-ring HUD — live sitting time, stand-up reminders with notification and sound, system-level idle auto-pause, and a daily sitting report.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/max-holo/dsh-sitmax.git"
+  },
+  "icon": "./icon.svg",
+  "type": "commonjs",
+  "main": "host.cjs",
+  "exports": {
+    ".": "./host.cjs",
+    "./client": "./lib/client.js",
+    "./icon": "./icon.svg",
+    "./locale/*.json": "./locale/*.json",
+    "./package.json": "./package.json"
+  },
+  "author": "max",
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "plugin",
+    "bundle",
+    "hud",
+    "sedentary",
+    "reminder",
+    "wellness"
+  ],
+  "dependencies": {},
+  "engines": {
+    "dsh": ">=0.2.2-0 <0.3.0"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [],
+      "external": []
+    }
+  },
+  "files": [
+    "host.cjs",
+    "lib/client.js",
+    "cordis.patch.yml",
+    "icon.svg",
+    "locale/*.json",
+    "package.json"
+  ]
+}

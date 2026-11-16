@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Sitmax track">
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="#0f172a"/>
+  <path d="M20 20 H44 A12 12 0 0 1 44 44 H20 A12 12 0 0 1 20 20 Z" fill="none" stroke="#334155" stroke-width="2.4"/>
+  <path d="M23 23.5 H41 A8.5 8.5 0 0 1 41 40.5 H23 A8.5 8.5 0 0 1 23 23.5 Z" fill="none" stroke="#475569" stroke-width="1.2" stroke-dasharray="2 3"/>
+  <circle cx="45.5" cy="32" r="3.6" fill="#f59e0b"/>
+  <circle cx="45.5" cy="32" r="6.6" fill="none" stroke="#f59e0b" stroke-opacity="0.35" stroke-width="1.6"/>
+</svg>

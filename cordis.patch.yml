@@ -1,0 +1,7 @@
+# dsh-sitmax bundle patch layer: inserts one row into the composed tree.
+# Client-only bundle: host.cjs is an inert row holder; the dsh.client
+# declaration contributes the browser HUD + reminder popup + settings and
+# report pages.
+- insert:
+    - id: dsh-sitmax
+      name: dsh-sitmax
