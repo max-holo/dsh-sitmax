@@ -1063,7 +1063,7 @@ export function apply(ctx) {
   // GitHub mark（官方 octocat 轮廓，currentColor 跟随主题文字色）。
   const GITHUB_MARK_PATH = 'M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z'
 
-  /** 设置/报告页标题行右侧的 GitHub 图标链接。 */
+  /** 设置/报告页标题行右侧的 GitHub 图标链接（由 HeaderIcons 组合）。 */
   function githubLinkEl(key) {
     return React.createElement('a', {
       key,
@@ -1073,6 +1073,7 @@ export function apply(ctx) {
       title: 'GitHub：max-holo/dsh-sitmax',
       'aria-label': '在 GitHub 上查看本项目',
       className: 'maxm-gh',
+      style: { marginLeft: 0 },
     }, React.createElement('svg', {
       viewBox: '0 0 16 16',
       width: '15',
@@ -1082,27 +1083,45 @@ export function apply(ctx) {
     }, React.createElement('path', { d: GITHUB_MARK_PATH })))
   }
 
-  /** npm 下载统计：打开设置页时自动拉取（服务端缓存 30 分钟）。 */
-  function DownloadsLine() {
-    const [d, setD] = React.useState(null)
+  /** npm 累计下载量：模块级缓存 10 分钟（服务端另有 30 分钟缓存），设置/报告页共用。 */
+  const NPM_MARK_PATH = 'M1.763 0C.786 0 0 .786 0 1.763v20.474C0 23.214.786 24 1.763 24h20.474c.977 0 1.763-.786 1.763-1.763V1.763C24 .786 23.214 0 22.237 0zM5.13 5.323l13.837.019-.009 13.836h-3.464l.01-10.382h-3.456L12.04 19.17H5.113z'
+  let dlMemo = { at: 0, promise: null }
+  function fetchTotal() {
+    if (dlMemo.promise !== null && Date.now() - dlMemo.at < 600000) return dlMemo.promise
+    dlMemo = {
+      at: Date.now(),
+      promise: fetch('/api/dsh-sitmax/downloads')
+        .then((r) => r.json())
+        .then((j) => (j && j.ok && typeof j.total === 'number' ? j.total : null))
+        .catch(() => null),
+    }
+    return dlMemo.promise
+  }
+
+  /** 标题行右侧：npm 图标 + 累计下载（取不到就不显示）+ GitHub 图标。 */
+  function HeaderIcons() {
+    const [total, setTotal] = React.useState(null)
+    const [ready, setReady] = React.useState(false)
     React.useEffect(() => {
       let stopped = false
-      fetch('/api/dsh-sitmax/downloads')
-        .then((r) => r.json())
-        .then((j) => { if (!stopped) setD(j) })
-        .catch(() => { if (!stopped) setD({ ok: false }) })
+      fetchTotal().then((n) => { if (!stopped) { setTotal(n); setReady(true) } })
       return () => { stopped = true }
     }, [])
-    const fmt = (n) => (typeof n === 'number' ? n.toLocaleString('en-US') : '—')
-    const text = d === null
-      ? '⬇ npm 下载统计获取中…'
-      : d.ok
-        ? '⬇ npm 累计下载 ' + fmt(d.total) + ' · 最近一周 ' + fmt(d.lastWeek)
-        : '⬇ npm 下载统计暂不可用（网络原因，稍后再试）'
-    return React.createElement('div', {
-      className: 'maxm-set-lab',
-      title: d && d.ok ? '统计区间 ' + (d.weekStart || '?') + ' ~ ' + (d.weekEnd || '?') + '，数据来自 api.npmjs.org，服务端缓存 30 分钟' : '数据来自 api.npmjs.org',
-    }, text)
+    return React.createElement('div', { style: { display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px', marginLeft: 'auto' } },
+      ready && total !== null
+        ? React.createElement('a', {
+            href: 'https://www.npmjs.com/package/dsh-sitmax',
+            target: '_blank',
+            rel: 'noopener noreferrer',
+            title: 'npm：dsh-sitmax · 累计下载 ' + total.toLocaleString('en-US'),
+            className: 'maxm-gh',
+            style: { marginLeft: 0, gap: '4px' },
+          },
+          React.createElement('svg', { viewBox: '0 0 24 24', width: '13', height: '13', fill: 'currentColor', 'aria-hidden': 'true' }, React.createElement('path', { d: NPM_MARK_PATH })),
+          React.createElement('span', { style: { fontSize: '12px', fontVariantNumeric: 'tabular-nums' } }, total.toLocaleString('en-US')))
+        : null,
+      githubLinkEl(),
+    )
   }
 
   function SettingsPage() {
@@ -1219,7 +1238,7 @@ export function apply(ctx) {
     return React.createElement('div', { className: 'maxm-page' },
       React.createElement('div', { className: 'maxm-title-row' },
         React.createElement('div', { className: 'maxm-page-title' }, '久坐沙漏 · 设置'),
-        githubLinkEl('gh'),
+        React.createElement(HeaderIcons, { key: 'icons' }),
       ),
       React.createElement('div', { className: 'maxm-page-sub' }, '保存后立即生效，并持久保存在本浏览器（localStorage）'),
       num('cycleMin', '沙漏循环时长', '沙流从 M 流到 X 的一轮时长（分钟）', 5, 120),
@@ -1246,8 +1265,6 @@ export function apply(ctx) {
         btn('🔊 测试提示音', 'maxm-btn-ghost', testSound),
         btn('🔄 刷新节假日数据', 'maxm-btn-ghost', () => { setFlash('正在刷新节假日数据…'); loadHolidays() }),
       ),
-      React.createElement('div', { className: 'maxm-page-sep' }),
-      React.createElement(DownloadsLine, { key: 'downloads' }),
     )
   }
 
@@ -1550,7 +1567,7 @@ export function apply(ctx) {
     return React.createElement('div', { className: 'maxm-page' },
       React.createElement('div', { className: 'maxm-title-row' },
         React.createElement('div', { className: 'maxm-page-title' }, '久坐沙漏 · 每日报告'),
-        githubLinkEl('gh'),
+        React.createElement(HeaderIcons, { key: 'icons' }),
       ),
       React.createElement('div', { className: 'maxm-page-sub' }, '数据保存在本浏览器，跨会话累计；按自然日归档'),
       vtab,

@@ -1,6 +1,6 @@
 {
   "name": "dsh-sitmax",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "DSH plugin bundle: an anti-sedentary track-ring HUD — live sitting time, stand-up reminders with notification and sound, system-level idle auto-pause, and a daily sitting report.",
   "license": "MIT",
   "repository": {
