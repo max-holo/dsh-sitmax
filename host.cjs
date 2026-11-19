@@ -81,6 +81,50 @@ module.exports = {
       })
     }
 
+    // ---- npm download stats --------------------------------------------------
+    // Served at /api/dsh-sitmax/downloads: last-week point + the summed range
+    // since the package's first publish (the npm range API covers 18 months,
+    // far beyond this package's age). Success caches 30 min, failure 5 min.
+    const NPM_PACKAGE = 'dsh-sitmax'
+    const NPM_SINCE = '2026-11-06' // time.created of the npm package
+    let downloadsCache = null // { at, ok, lastWeek, total, since, error }
+    function fetchJson(url, timeoutMs) {
+      return new Promise((resolve, reject) => {
+        const req = https.get(url, (res) => {
+          if (res.statusCode !== 200) {
+            res.resume()
+            reject(new Error('HTTP ' + res.statusCode + ' from ' + url))
+            return
+          }
+          let d = ''
+          res.on('data', (c) => { d += c })
+          res.on('end', () => {
+            try { resolve(JSON.parse(d)) } catch (err) { reject(err) }
+          })
+        })
+        req.on('error', reject)
+        req.setTimeout(timeoutMs, () => { req.destroy(new Error('fetch timeout')) })
+      })
+    }
+    async function fetchDownloads() {
+      const today = new Date().toISOString().slice(0, 10)
+      const [week, range] = await Promise.all([
+        fetchJson(`https://api.npmjs.org/downloads/point/last-week/${NPM_PACKAGE}`, 8000),
+        fetchJson(`https://api.npmjs.org/downloads/range/${NPM_SINCE}:${today}/${NPM_PACKAGE}`, 8000),
+      ])
+      let total = 0
+      if (Array.isArray(range.downloads)) {
+        for (const day of range.downloads) total += Number(day.downloads) || 0
+      }
+      return {
+        lastWeek: Number(week.downloads) || 0,
+        total,
+        since: NPM_SINCE,
+        weekStart: typeof week.start === 'string' ? week.start : null,
+        weekEnd: typeof week.end === 'string' ? week.end : null,
+      }
+    }
+
     function start() {
       if (stopped || process.platform !== 'win32') return
       let proc = null
@@ -176,6 +220,34 @@ module.exports = {
           'cache-control': 'no-store',
         })
         res.end(body)
+      },
+    }))
+
+    ctx.effect(() => webServer.register({
+      kind: 'exact',
+      path: '/api/dsh-sitmax/downloads',
+      handler(req, res) {
+        const serve = (payload) => {
+          res.writeHead(200, {
+            'content-type': 'application/json; charset=utf-8',
+            'cache-control': 'no-store',
+          })
+          res.end(JSON.stringify(payload))
+        }
+        const fresh =
+          downloadsCache !== null
+          && Date.now() - downloadsCache.at < (downloadsCache.ok ? 1800000 : 300000)
+        if (fresh) {
+          serve({ ok: downloadsCache.ok, ...downloadsCache.data, cachedAt: downloadsCache.at })
+          return
+        }
+        fetchDownloads().then((data) => {
+          downloadsCache = { at: Date.now(), ok: true, data }
+          serve({ ok: true, ...data, cachedAt: downloadsCache.at })
+        }).catch((err) => {
+          downloadsCache = { at: Date.now(), ok: false, data: { error: String(err && err.message ? err.message : err) } }
+          serve({ ok: false, error: downloadsCache.data.error, cachedAt: downloadsCache.at })
+        })
       },
     }))
 
